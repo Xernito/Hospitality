@@ -23,6 +23,7 @@ So to help me fix bugs, please describe clearly what happened. I also need a log
 
 Hospitality should be loaded as late as possible in the load order.
   </description>
+  <modIconPath IgnoreIfNoMatchingField="True">HospitalityModIcon</modIconPath>
 
   <modDependencies>
 		<li>
