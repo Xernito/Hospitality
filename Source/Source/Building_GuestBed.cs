@@ -40,7 +40,7 @@ namespace Hospitality
             return rentalFee;
         }
 
-        internal void SetRentalFee(int value)
+        public void SetRentalFee(int value)
         {
             rentalFee = Mathf.Clamp(value, 0, int.MaxValue);
             UpdateStats();

@@ -13,7 +13,7 @@ namespace Hospitality.Patches
         public class Notify_MemberExitedMap
         {
             [HarmonyPrefix]
-            public static bool Prefix(Pawn member, ref bool free)
+            public static bool Prefix(Pawn member, ref bool freed)
             {
                 if (member.Faction == Faction.OfPlayer) return true;
                 if (PawnUtility.IsTravelingInTransportPodWorldObject(member)) return false; // Fired in pod? Don't trigger
@@ -23,7 +23,7 @@ namespace Hospitality.Patches
 
                 if (compGuest == null || !compGuest.rescued || member.guest == null || PawnUtility.IsTravelingInTransportPodWorldObject(member)) return true;
 
-                free = true;
+                freed = true;
                 member.guest.hostFactionInt = Faction.OfPlayer; // Setting this makes the reward work
                 compGuest.rescued = false; // Turn back off
                 compGuest.wasDowned = false;
