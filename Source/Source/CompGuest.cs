@@ -44,7 +44,7 @@ namespace Hospitality
             Pawn.ownership.UnclaimBed();
         }
 
-        private Pawn Pawn => (Pawn) parent;
+    private Pawn Pawn => parent as Pawn ?? (parent is Corpse corpse ? corpse.InnerPawn : null);
 
         public bool HasBed => bed != null && bed.Spawned && bed.Owners().Contains(Pawn);
         
@@ -85,7 +85,8 @@ namespace Hospitality
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                if (Pawn.Dead) return;
+            // Corpse != Pawn
+            if (parent is Corpse || Pawn.Dead) return;
 
                 // NOTE: Careful! All pawns have this component
 
