@@ -293,7 +293,7 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
             var stayDuration = (int)(Rand.Range(1f, 2.4f) * GenDate.TicksPerDay);
             CreateLord(parms.faction, spot, visitors, map, true, true, stayDuration);
 
-            // Update our mapcomponents guests.
+            // Update our map components guests.
             map.GetMapComponent().RefreshGuestListTotal();
         }
         catch (Exception e)
@@ -420,21 +420,40 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
 
         GetSpotAddDropSpots(map, cells);
 
-        return CheckCanReach(pawn, cells);
+        return GetRandomSpotFromCells(pawn, cells);
     }
 
-    private static IntVec3 CheckCanReach(Pawn pawn, IEnumerable<IntVec3> cells)
+    private static IntVec3 GetRandomSpotFromCells(Pawn pawn, IEnumerable<IntVec3> cells)
     {
         var map = pawn.Map;
         var unroofedOption = IntVec3.Invalid;
+
+        // Check a couple and use the closest
+        var closest = IntVec3.Invalid;
+        var closestDistance = float.MaxValue;
+        var samples = 0;
 
         // Prefer roofed
         foreach (var cell in cells.InRandomOrder())
         {
             if (cell.IsValid && pawn.CanReach(cell, PathEndMode.OnCell, Danger.Deadly))
             {
-                if (cell.Roofed(map)) return cell;
+                if (cell.Roofed(map))
+                {
+                    var distance = IntVec3Utility.ManhattanDistanceFlat(cell, pawn.Position);
+                    if (distance < closestDistance)
+                    {
+                        closest = cell;
+                        closestDistance = distance;
+                        samples++;
+                    }
+                }
+
                 if (!unroofedOption.IsValid) unroofedOption = cell;
+
+                // We never have to calculate distance for more than 20 cells, but still have a decent chance for a nearby cell.
+                // This can still lead to pawns traveling an annoyingly far distance through the base, if the closest cell is not easily reachable.
+                if (samples >= 20) return closest;
             }
         }
 
