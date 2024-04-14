@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
-using Hospitality.Utilities;
 using JetBrains.Annotations;
 using RimWorld;
 using UnityEngine;
@@ -12,7 +11,7 @@ using Verse.AI;
 using Verse.AI.Group;
 using Verse.Sound;
 
-namespace Hospitality;
+namespace Hospitality.Utilities;
 
 public static class ItemUtility
 {

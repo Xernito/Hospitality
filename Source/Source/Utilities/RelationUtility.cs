@@ -4,60 +4,59 @@ using System.Text;
 using RimWorld;
 using Verse;
 
-namespace Hospitality
+namespace Hospitality.Utilities;
+
+internal static class RelationUtility
 {
-    internal static class RelationUtility
+    private static readonly Dictionary<int, RelationInfo> relationCache = new();
+
+    public static RelationInfo GetRelationInfo(Pawn pawn)
     {
-        private static readonly Dictionary<int, RelationInfo> relationCache = new();
+        if (!relationCache.TryGetValue(pawn.thingIDNumber, out var info)) return CreateRelationInfo(pawn);
 
-        public class RelationInfo
+        // Update infos twice per minute
+        if (GenTicks.TicksGame - GenTicks.TickLongInterval > info.lastUpdateTick) UpdateInfo(info, pawn);
+
+        return info;
+    }
+
+    private static RelationInfo CreateRelationInfo(Pawn guest)
+    {
+        var info = new RelationInfo();
+        UpdateInfo(info, guest);
+        relationCache.Add(guest.thingIDNumber, info);
+        return info;
+    }
+
+    private static void UpdateInfo(RelationInfo info, Pawn guest)
+    {
+        var relations = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction.Where(p => p.relations != null).SelectMany(p => GetRelations(guest, p)).ToArray();
+        info.hasRelationship = relations.Length > 0;
+        info.lastUpdateTick = GenTicks.TicksGame;
+        var sb = new StringBuilder();
+        foreach (var relation in relations)
         {
-            public bool hasRelationship;
-            public string tooltip;
-            public int lastUpdateTick;
+            sb.AppendLine("Relationship".Translate(relation.def.GetGenderSpecificLabelCap(guest), relation.colonist.Label, relation.colonist));
         }
 
-        private struct Relation
-        {
-            public Pawn colonist;
-            public PawnRelationDef def;
-        }
+        info.tooltip = sb.ToString();
+    }
 
-        public static RelationInfo GetRelationInfo(Pawn pawn)
-        {
-            if (!relationCache.TryGetValue(pawn.thingIDNumber, out var info)) return CreateRelationInfo(pawn);
+    private static IEnumerable<Relation> GetRelations(Pawn guest, Pawn p)
+    {
+        return p.GetRelations(guest).Select(relationDef => new Relation { colonist = p, def = relationDef });
+    }
 
-            // Update infos twice per minute
-            if (GenTicks.TicksGame - GenTicks.TickLongInterval > info.lastUpdateTick) UpdateInfo(info, pawn);
+    public class RelationInfo
+    {
+        public bool hasRelationship;
+        public int lastUpdateTick;
+        public string tooltip;
+    }
 
-            return info;
-        }
-
-        private static RelationInfo CreateRelationInfo(Pawn guest)
-        {
-            var info = new RelationInfo();
-            UpdateInfo(info, guest);
-            relationCache.Add(guest.thingIDNumber, info);
-            return info;
-        }
-
-        private static void UpdateInfo(RelationInfo info, Pawn guest)
-        {
-            var relations = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction.Where(p => p.relations != null).SelectMany(p => GetRelations(guest, p)).ToArray();
-            info.hasRelationship = relations.Length > 0;
-            info.lastUpdateTick = GenTicks.TicksGame;
-            var sb = new StringBuilder();
-            foreach (var relation in relations)
-            {
-                sb.AppendLine("Relationship".Translate(relation.def.GetGenderSpecificLabelCap(guest), relation.colonist.Label, relation.colonist));
-            }
-
-            info.tooltip = sb.ToString();
-        }
-
-        private static IEnumerable<Relation> GetRelations(Pawn guest, Pawn p)
-        {
-            return p.GetRelations(guest).Select(relationDef => new Relation {colonist = p, def = relationDef});
-        }
+    private struct Relation
+    {
+        public Pawn colonist;
+        public PawnRelationDef def;
     }
 }

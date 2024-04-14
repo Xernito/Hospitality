@@ -1,7 +1,8 @@
+using Hospitality.Utilities;
 using RimWorld;
 using UnityEngine;
 using Verse;
-using static Hospitality.RelationUtility;
+using static Hospitality.Utilities.RelationUtility;
 
 namespace Hospitality.MainTab
 {
