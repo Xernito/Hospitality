@@ -9,353 +9,358 @@ using Verse;
 using BedUtility = Hospitality.Utilities.BedUtility;
 using GuestUtility = Hospitality.Utilities.GuestUtility;
 
-namespace Hospitality
+namespace Hospitality;
+
+public class Building_GuestBed : Building_Bed
 {
-    public class Building_GuestBed : Building_Bed
+    internal const int FeeStep = 10;
+    private static readonly Color sheetColorForGuests = new(89 / 255f, 55 / 255f, 121 / 255f);
+
+    public int previousRoyaltyUpdate;
+
+    private int rentalFee;
+
+    public int MoodEffect => Mathf.RoundToInt(rentalFee * -0.1f);
+
+    public override Color DrawColor => def.MadeFromStuff ? base.DrawColor : DrawColorTwo;
+
+    public override Color DrawColorTwo => sheetColorForGuests;
+
+    public BedStats Stats { get; } = new();
+
+    internal int RentalFee
     {
-        private static readonly Color sheetColorForGuests = new(89 / 255f, 55 / 255f, 121 / 255f);
+        get => rentalFee;
+        set => SetRentalFee(value);
+    }
 
-        internal const int FeeStep = 10;
+    public int GetRentalFee()
+    {
+        return rentalFee;
+    }
 
-        private int rentalFee;
+    public void SetRentalFee(int value)
+    {
+        rentalFee = Mathf.Clamp(value, 0, int.MaxValue);
+        UpdateStats();
+    }
 
-        public int MoodEffect => Mathf.RoundToInt(rentalFee * -0.1f);
+    public override void ExposeData()
+    {
+        base.ExposeData();
+        Scribe_Values.Look(ref rentalFee, "RentalFee");
+    }
 
-        public int previousRoyaltyUpdate;
+    public override void TickLong()
+    {
+        UpdateStats();
 
-        public override Color DrawColor => def.MadeFromStuff ? base.DrawColor : DrawColorTwo;
-
-        public override Color DrawColorTwo => sheetColorForGuests;
-
-        public BedStats Stats { get; } = new();
-
-        internal int RentalFee
+        // Remove owners that weren't properly cleared
+        foreach (var pawn in CompAssignableToPawn.AssignedPawnsForReading.ToArray())
         {
-            get => rentalFee;
-            set => SetRentalFee(value);
+            if (pawn == null || !pawn.Spawned || pawn.Dead) CompAssignableToPawn.TryUnassignPawn(pawn);
         }
-        
-        public int GetRentalFee()
+    }
+
+    public override void SpawnSetup(Map map, bool respawningAfterLoad)
+    {
+        base.SpawnSetup(map, respawningAfterLoad);
+
+        UpdateStats();
+    }
+
+    private void UpdateStats()
+    {
+        Stats.lastCalculated = GenTicks.TicksGame;
+        try
         {
-            return rentalFee;
+            var owners = this.Owners().Count == 0 ? (string)"Nobody".Translate() : this.Owners().Select(o => (string)o.NameShortColored).ToCommaList(true);
+            Stats.title = $"{def.LabelCap} ({owners})";
+            Stats.staticBedValue = BedUtility.StaticBedValue(this, out Stats.room, out _, out _, out _, out _, out _);
+            Stats.attractiveness = Mathf.CeilToInt(BedUtility.ScoreFactor * Stats.staticBedValue - rentalFee);
+        }
+        catch (Exception e)
+        {
+            Log.ErrorOnce($"Failed to calculate stats: {e}", 834763462);
+        }
+    }
+
+    public void UpdateRoyaltyStats()
+    {
+        if (!ModsConfig.RoyaltyActive) return;
+
+        var time = DateTime.Now.Second;
+
+        if (time != previousRoyaltyUpdate)
+        {
+            Stats.metRoyalTitles = GetMetRoyalTitles(Stats.room);
+            Stats.textNextTitleReq = GetNextTitleReq(Stats.room, Stats.metRoyalTitles);
+
+            previousRoyaltyUpdate = time;
+        }
+    }
+
+    private string GetNextTitleReq(Room room, RoyalTitleDef[] metRoyalTitles)
+    {
+        if (room == null) return string.Empty;
+        if (GuestUtility.AllTitles.NullOrEmpty()) return string.Empty;
+        if (!IsSingleBedroom(room)) return "NextTitleRequirements".Translate("BedroomMustBeSingle".Translate());
+        foreach (var title in GuestUtility.AllTitles.Where(t => !metRoyalTitles.Contains(t) && t.bedroomRequirements != null).OrderBy(t => t.seniority))
+        {
+            return "NextTitleRequirements".Translate(title.bedroomRequirements.Where(req => !req.Met(room)).Select(req => req.Label(room)).ToCommaList(true));
         }
 
-        public void SetRentalFee(int value)
-        {
-            rentalFee = Mathf.Clamp(value, 0, int.MaxValue);
-            UpdateStats();
-        }
+        return string.Empty;
+    }
 
-        public override void ExposeData()
+    private RoyalTitleDef[] GetMetRoyalTitles(Room room) // This causes the slowdown when there are lots of guest beds. Pref to cache these values. ~30ms per call
+    {
+        try
         {
-            base.ExposeData();
-            Scribe_Values.Look(ref rentalFee, "RentalFee");
-        }
-
-        public override void TickLong()
-        {
-            UpdateStats();
-
-            // Remove owners that weren't properly cleared
-            foreach (var pawn in CompAssignableToPawn.AssignedPawnsForReading.ToArray())
+            if (room != null)
             {
-                if (pawn == null || !pawn.Spawned || pawn.Dead) CompAssignableToPawn.TryUnassignPawn(pawn);
+                return GuestUtility.AllTitles.Where(t => t.bedroomRequirements.NullOrEmpty() || (IsSingleBedroom(room) && t.bedroomRequirements.All(req => req.Met(room)))).ToArray();
             }
         }
-
-        public override void SpawnSetup(Map map, bool respawningAfterLoad)
+        catch (Exception e)
         {
-            base.SpawnSetup(map, respawningAfterLoad);
-
-            UpdateStats();
+            Log.Error($"Failed to read royalty titles or their bedroom requirements. This means you are using a mod that changes these and broke them.\n{e}");
         }
 
-        private void UpdateStats()
+        return Array.Empty<RoyalTitleDef>();
+    }
+
+    private bool IsSingleBedroom(Room room)
+    {
+        return !room.ContainedBeds.Any(containedBed => containedBed != this && containedBed.def.building.bed_humanlike);
+    }
+
+    public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
+    {
+        // Creating copy for iteration, since list changes during loop
+        foreach (var owner in this.Owners().ToArray())
         {
-            Stats.lastCalculated = GenTicks.TicksGame;
-            try
-            {
-                var owners = this.Owners().Count == 0 ? (string) "Nobody".Translate() : this.Owners().Select(o => (string) o.NameShortColored).ToCommaList(true);
-                Stats.title = $"{def.LabelCap} ({owners})";
-                Stats.staticBedValue = BedUtility.StaticBedValue(this, out Stats.room, out _, out _, out _, out _, out _);
-                Stats.attractiveness = Mathf.CeilToInt(BedUtility.ScoreFactor * Stats.staticBedValue - rentalFee);
-            }
-            catch (Exception e)
-            {
-                Log.ErrorOnce($"Failed to calculate stats: {e}", 834763462);
-            }
+            owner.ownership.UnclaimBed();
         }
 
-        public void UpdateRoyaltyStats()
+        var district = this.GetDistrict();
+        base.DeSpawn(mode);
+        if (district != null)
         {
-            if (!ModsConfig.RoyaltyActive) return;
+            district.Notify_RoomShapeOrContainedBedsChanged();
+            district.Room.Notify_RoomShapeChanged();
+        }
+    }
 
-            var time = DateTime.Now.Second;
+    public override string GetInspectString()
+    {
+        var stringBuilder = new StringBuilder();
 
-            if (time != previousRoyaltyUpdate)
-            {
-                Stats.metRoyalTitles = GetMetRoyalTitles(Stats.room);
-                Stats.textNextTitleReq = GetNextTitleReq(Stats.room, Stats.metRoyalTitles);
-
-                previousRoyaltyUpdate = time;
-            }
+        var fromComps = InspectStringPartsFromComps();
+        if (!string.IsNullOrWhiteSpace(fromComps))
+        {
+            stringBuilder.AppendLine(fromComps);
         }
 
-        private string GetNextTitleReq(Room room, RoyalTitleDef[] metRoyalTitles)
+        var owners = this.Owners();
+        if (!owners.Any())
         {
-            if (room == null) return string.Empty;
-            if (GuestUtility.AllTitles.NullOrEmpty()) return string.Empty;
-            if (!IsSingleBedroom(room)) return "NextTitleRequirements".Translate("BedroomMustBeSingle".Translate());
-            foreach (var title in GuestUtility.AllTitles.Where(t=>!metRoyalTitles.Contains(t) && t.bedroomRequirements != null).OrderBy(t=>t.seniority))
-            {
-                return "NextTitleRequirements".Translate(title.bedroomRequirements.Where(req => !req.Met(room)).Select(req => req.Label(room)).ToCommaList(true));
-            }
-
-            return string.Empty;
+            stringBuilder.Append($"{"Owner".Translate()}: {"Nobody".Translate()}");
         }
-
-        private RoyalTitleDef[] GetMetRoyalTitles(Room room) // This causes the slowdown when there are lots of guest beds. Pref to cache these values. ~30ms per call
+        else if (owners.Count == 1)
         {
-            try
+            stringBuilder.Append($"{"Owner".Translate()}: {owners[0].LabelShortCap}");
+        }
+        else
+        {
+            stringBuilder.Append("Owners".Translate() + ": ");
+            var notFirst = false;
+            foreach (var owner in owners)
             {
-                if (room != null)
+                if (owner == null) continue; // should already be filtered by this.Owners
+                if (notFirst)
                 {
-                    return GuestUtility.AllTitles.Where(t => t.bedroomRequirements.NullOrEmpty() || IsSingleBedroom(room) && t.bedroomRequirements.All(req => req.Met(room))).ToArray();
+                    stringBuilder.Append(", ");
+                }
+
+                notFirst = true;
+                stringBuilder.Append(owner.LabelShortCap);
+            }
+            //if(notFirst) stringBuilder.AppendLine();
+        }
+
+        return stringBuilder.ToString();
+    }
+
+    // Note to whoever wants to add to this method (hi jptrrs!):
+    // You can just do
+    // foreach (Gizmo c in base.GetGizmos())
+    // {
+    //    yield return c;
+    // }
+    // yield return [whatever you want to add];
+    //
+    // No need to copy this method.
+    public override IEnumerable<Gizmo> GetGizmos()
+    {
+        // Display the original gizmos (includes the swap guest bed button via patch)
+        foreach (var gizmo in base.GetGizmos())
+        {
+            switch (gizmo)
+            {
+                case Command_SetBedOwnerType o:
+                {
+                    o.Disable();
+                    break;
+                }
+                case Command_Toggle toggle:
+                {
+                    // Disable prisoner and medical buttons
+                    if (toggle.defaultLabel == "CommandBedSetForPrisonersLabel".Translate() || toggle.defaultLabel == "CommandBedSetAsMedicalLabel".Translate()) gizmo.Disable();
+                    break;
+                }
+                case Command_Action action:
+                {
+                    // Disable set owner button
+                    if (action.defaultLabel == "CommandThingSetOwnerLabel".Translate()) action.Disable();
+                    break;
                 }
             }
-            catch (Exception e)
-            {
-                Log.Error($"Failed to read royalty titles or their bedroom requirements. This means you are using a mod that changes these and broke them.\n{e}");
-            }
 
-            return Array.Empty<RoyalTitleDef>();
+            yield return gizmo;
         }
 
-        private bool IsSingleBedroom(Room room)
+        // Gizmo for drawing guest room info
+        var beds = Find.Selector.SelectedObjects.OfType<Building_GuestBed>().ToArray();
+        foreach (var bed in beds)
         {
-            return !room.ContainedBeds.Any(containedBed => containedBed != this && containedBed.def.building.bed_humanlike);
+            if (bed.Stats.lastCalculated == 0 || bed.Stats.room == null) bed.UpdateStats();
         }
 
-        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
+        yield return new Gizmo_GuestBed(beds);
+
+        // Get base def
+        var defName = def.defName.ReplaceFirst("Guest", string.Empty);
+        var baseDef = DefDatabase<ThingDef>.GetNamed(defName);
+
+        // Add build copy command
+        var buildCopy = BuildCopyCommandUtility.BuildCopyCommand(baseDef, Stuff, null, null, false);
+        if (buildCopy != null) yield return buildCopy;
+    }
+
+    public override void PostMake()
+    {
+        base.PostMake();
+        PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDef.Named("GuestBeds"), KnowledgeAmount.Total);
+    }
+
+    public override void DrawGUIOverlay()
+    {
+        if (Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest)
         {
-            // Creating copy for iteration, since list changes during loop
-            foreach (var owner in this.Owners().ToArray())
-            {
-                owner.ownership.UnclaimBed();
-            }
-
-            District district = this.GetDistrict();
-            base.DeSpawn(mode);
-            if (district != null)
-            {
-                district.Notify_RoomShapeOrContainedBedsChanged();
-                district.Room.Notify_RoomShapeChanged();
-            }
-        }
-
-        public override string GetInspectString()
-        {
-            var stringBuilder = new StringBuilder();
-
-            var fromComps = InspectStringPartsFromComps();
-            if (!string.IsNullOrWhiteSpace(fromComps))
-            {
-                stringBuilder.AppendLine(fromComps);
-            }
+            var defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
 
             var owners = this.Owners();
             if (!owners.Any())
             {
-                stringBuilder.Append($"{"Owner".Translate()}: {"Nobody".Translate()}");
+                GenMapUI.DrawThingLabel(this, ((float)rentalFee).ToStringMoney(), defaultThingLabelColor);
             }
             else if (owners.Count == 1)
             {
-                stringBuilder.Append($"{"Owner".Translate()}: {owners[0].LabelShortCap}");
+                if (owners[0].InBed() && owners[0].CurrentBed() == this) return;
+                GenMapUI.DrawThingLabel(this, owners[0].LabelShort, defaultThingLabelColor);
             }
             else
             {
-                stringBuilder.Append("Owners".Translate() + ": ");
-                bool notFirst = false;
-                foreach (var owner in owners)
+                for (var index = 0; index < owners.Count; ++index)
                 {
-                    if (owner == null) continue; // should already be filtered by this.Owners
-                    if (notFirst)
+                    if (!owners[index].InBed() || owners[index].CurrentBed() != this || !(owners[index].Position == GetSleepingSlotPos(index)))
                     {
-                        stringBuilder.Append(", ");
-                    }
-                    notFirst = true;
-                    stringBuilder.Append(owner.LabelShortCap);
-                }
-                //if(notFirst) stringBuilder.AppendLine();
-            }
-            return stringBuilder.ToString();
-        }
-
-        // Note to whoever wants to add to this method (hi jptrrs!):
-        // You can just do
-        // foreach (Gizmo c in base.GetGizmos())
-        // {
-        //    yield return c;
-        // }
-        // yield return [whatever you want to add];
-        //
-        // No need to copy this method.
-        public override IEnumerable<Gizmo> GetGizmos()
-        {
-            // Display the original gizmos (includes the swap guest bed button via patch)
-            foreach (var gizmo in base.GetGizmos())
-            {
-                switch (gizmo)
-                {
-                    case Command_SetBedOwnerType o: {
-                        o.Disable();
-                        break;
-                    }
-                    case Command_Toggle toggle: {
-                        // Disable prisoner and medical buttons
-                        if (toggle.defaultLabel == "CommandBedSetForPrisonersLabel".Translate() || toggle.defaultLabel == "CommandBedSetAsMedicalLabel".Translate()) gizmo.Disable();
-                        break;
-                    }
-                    case Command_Action action: {
-                        // Disable set owner button
-                        if (action.defaultLabel == "CommandThingSetOwnerLabel".Translate()) action.Disable();
-                        break;
-                    }
-                }
-                yield return gizmo;
-            }
-
-            // Gizmo for drawing guest room info
-            var beds = Find.Selector.SelectedObjects.OfType<Building_GuestBed>().ToArray();
-            foreach (var bed in beds)
-            {
-                if(bed.Stats.lastCalculated == 0 || bed.Stats.room == null) bed.UpdateStats();
-            }
-
-            yield return new Gizmo_GuestBed(beds);
-
-            // Get base def
-            var defName = def.defName.ReplaceFirst("Guest", string.Empty);
-            var baseDef = DefDatabase<ThingDef>.GetNamed(defName);
-
-            // Add build copy command
-            var buildCopy = BuildCopyCommandUtility.BuildCopyCommand(baseDef, Stuff, null, null, false);
-            if (buildCopy != null) yield return buildCopy;
-        }
-
-        public override void PostMake()
-        {
-            base.PostMake();
-            PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDef.Named("GuestBeds"), KnowledgeAmount.Total);
-        }
-
-        public override void DrawGUIOverlay()
-        {
-            if (Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest)
-            {
-                var defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
-
-                var owners = this.Owners();
-                if (!owners.Any())
-                {
-                    GenMapUI.DrawThingLabel(this, ((float)rentalFee).ToStringMoney(), defaultThingLabelColor);
-                }
-                else if (owners.Count == 1)
-                {
-                    if (owners[0].InBed() && owners[0].CurrentBed() == this) return;
-                    GenMapUI.DrawThingLabel(this, owners[0].LabelShort, defaultThingLabelColor);
-                }
-                else
-                {
-                    for (int index = 0; index < owners.Count; ++index)
-                    {
-                        if (!owners[index].InBed() || owners[index].CurrentBed() != this || !(owners[index].Position == GetSleepingSlotPos(index)))
-                        {
-                            var pos = this.GetMultiOwnersLabelScreenPosFor(index); 
-                            GenMapUI.DrawThingLabel(pos, owners[index].LabelShort, defaultThingLabelColor);
-                        }
+                        var pos = GetMultiOwnersLabelScreenPosFor(index);
+                        GenMapUI.DrawThingLabel(pos, owners[index].LabelShort, defaultThingLabelColor);
                     }
                 }
             }
         }
+    }
 
-        public static void Swap(Building_Bed bed)
+    public static void Swap(Building_Bed bed)
+    {
+        if (bed == null) return;
+
+        var forPrisoners = bed.ForPrisoners; // Store this, since it changes during spawn
+
+        foreach (var pawn in bed.CurOccupants)
         {
-            if (bed == null) return;
-
-            bool forPrisoners = bed.ForPrisoners; // Store this, since it changes during spawn
-
-            foreach (var pawn in bed.CurOccupants)
-            {
-                RestUtility.KickOutOfBed(pawn, bed);
-            }
-            bed.RemoveAllOwners();
-
-            Building_Bed newBed;
-            if (bed.IsGuestBed())
-            {
-                newBed = (Building_Bed) MakeBed(bed, bed.def.defName.Split(new[] {"Guest"}, StringSplitOptions.RemoveEmptyEntries)[0]);
-                newBed.Medical = false;
-                newBed.ForPrisoners = false;
-            }
-            else
-            {
-                newBed = (Building_GuestBed) MakeBed(bed, bed.def.defName + "Guest");
-                forPrisoners = false; // never for prisoners
-            }
-
-            // Art gets destroyed when new bed spawns
-            var compArt = bed.TryGetComp<CompArt>();
-            var art = compArt?.Active != null && compArt.taleRef != null ? new {authorName = compArt.authorNameInt, title = compArt.titleInt, taleRef = new TaleReference {tale = compArt.taleRef.tale, seed = compArt.taleRef.seed}} : null;
-            var paint = bed.PaintColorDef;
-            compArt?.taleRef?.tale?.Notify_NewlyUsed();
-
-            newBed.SetFactionDirect(bed.Faction);
-            var spawnedBed = (Building_Bed) GenSpawn.Spawn(newBed, bed.Position, bed.Map, bed.Rotation);
-            spawnedBed.HitPoints = bed.HitPoints;
-            spawnedBed.ForPrisoners = forPrisoners;
-            spawnedBed.Medical = false;
-
-            var compQuality = spawnedBed.TryGetComp<CompQuality>();
-            compQuality?.SetQuality(bed.GetComp<CompQuality>().Quality, ArtGenerationContext.Colony);
-
-            // Apply art
-            var newArt = spawnedBed.TryGetComp<CompArt>();
-            if (newArt != null && art != null)
-            {
-                newArt.authorNameInt = art.authorName;
-                newArt.titleInt = art.title;
-                newArt.taleRef = art.taleRef;
-            }
-
-            spawnedBed.ChangePaint(paint);
-            spawnedBed.StyleDef = bed.StyleDef;
-
-            Find.Selector.Select(spawnedBed, false);
+            RestUtility.KickOutOfBed(pawn, bed);
         }
 
-        private static Thing MakeBed(Building_Bed bed, string defName)
+        bed.RemoveAllOwners();
+
+        Building_Bed newBed;
+        if (bed.IsGuestBed())
         {
-            var newDef = DefDatabase<ThingDef>.GetNamed(defName);
-            return ThingMaker.MakeThing(newDef, bed.Stuff);
+            newBed = (Building_Bed)MakeBed(bed, bed.def.defName.Split(["Guest"], StringSplitOptions.RemoveEmptyEntries)[0]);
+            newBed.Medical = false;
+            newBed.ForPrisoners = false;
+        }
+        else
+        {
+            newBed = (Building_GuestBed)MakeBed(bed, bed.def.defName + "Guest");
+            forPrisoners = false; // never for prisoners
         }
 
-        public bool TryClaimBed(Pawn pawn)
+        // Art gets destroyed when new bed spawns
+        var compArt = bed.TryGetComp<CompArt>();
+        var art = compArt?.Active != null && compArt.taleRef != null ? new { authorName = compArt.authorNameInt, title = compArt.titleInt, taleRef = new TaleReference { tale = compArt.taleRef.tale, seed = compArt.taleRef.seed } } : null;
+        var paint = bed.PaintColorDef;
+        compArt?.taleRef?.tale?.Notify_NewlyUsed();
+
+        newBed.SetFactionDirect(bed.Faction);
+        var spawnedBed = (Building_Bed)GenSpawn.Spawn(newBed, bed.Position, bed.Map, bed.Rotation);
+        spawnedBed.HitPoints = bed.HitPoints;
+        spawnedBed.ForPrisoners = forPrisoners;
+        spawnedBed.Medical = false;
+
+        var compQuality = spawnedBed.TryGetComp<CompQuality>();
+        compQuality?.SetQuality(bed.GetComp<CompQuality>().Quality, ArtGenerationContext.Colony);
+
+        // Apply art
+        var newArt = spawnedBed.TryGetComp<CompArt>();
+        if (newArt != null && art != null)
         {
-            if (!pawn.ownership.ClaimBedIfNonMedical(this)) return false;
-            UpdateStats();
-            return CompAssignableToPawn.AssignedPawnsForReading.Contains(pawn);
+            newArt.authorNameInt = art.authorName;
+            newArt.titleInt = art.title;
+            newArt.taleRef = art.taleRef;
         }
 
-        public class BedStats
-        {
-            public int lastCalculated;
-            public Room room;
-            public int attractiveness;
-            public TaggedString title;
-            public int staticBedValue;
-            public RoyalTitleDef[] metRoyalTitles;
-            public TaggedString textNextTitleReq;
-        }
+        spawnedBed.ChangePaint(paint);
+        spawnedBed.StyleDef = bed.StyleDef;
+
+        Find.Selector.Select(spawnedBed, false);
+    }
+
+    private static Thing MakeBed(Building_Bed bed, string defName)
+    {
+        var newDef = DefDatabase<ThingDef>.GetNamed(defName);
+        return ThingMaker.MakeThing(newDef, bed.Stuff);
+    }
+
+    public bool TryClaimBed(Pawn pawn)
+    {
+        if (!pawn.ownership.ClaimBedIfNonMedical(this)) return false;
+        UpdateStats();
+        return CompAssignableToPawn.AssignedPawnsForReading.Contains(pawn);
+    }
+
+    public class BedStats
+    {
+        public int attractiveness;
+        public int lastCalculated;
+        public RoyalTitleDef[] metRoyalTitles;
+        public Room room;
+        public int staticBedValue;
+        public TaggedString textNextTitleReq;
+        public TaggedString title;
     }
 }
