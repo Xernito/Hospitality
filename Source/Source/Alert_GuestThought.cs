@@ -4,29 +4,29 @@ using Hospitality.Utilities;
 using RimWorld;
 using Verse;
 
-namespace Hospitality
+namespace Hospitality;
+
+public abstract class Alert_GuestThought : Alert_Guest
 {
-    public abstract class Alert_GuestThought : Alert_Guest
+    private static readonly List<Thought> tmpThoughts = new();
+    protected abstract ThoughtDef Thought { get; }
+
+    protected override void UpdateAffectedPawnsCache()
     {
-        private static readonly List<Thought> tmpThoughts = new();
-        protected abstract ThoughtDef Thought { get; }
-
-        protected override void UpdateAffectedPawnsCache()
+        affectedPawnCache.Clear();
+        var allGuests = Find.Maps.SelectMany(m => m.GetMapComponent()?.PresentGuests);
+        foreach (var guest in allGuests)
         {
-            affectedPawnCache.Clear();
-            var allGuests = Find.Maps.SelectMany(m => m.GetMapComponent()?.PresentGuests);
-            foreach (var guest in allGuests)
-            {
-                if(guest.Dead) continue;
-                if(guest.needs.mood == null) continue;
+            if (guest.Dead) continue;
+            if (guest.needs.mood == null) continue;
 
-                guest.needs.mood.thoughts.GetAllMoodThoughts(tmpThoughts);
-                if (tmpThoughts.Any(t => t.def == Thought && !ThoughtUtility.ThoughtNullified(guest, t.def)))
-                {
-                    affectedPawnCache.Add(guest);
-                }
-                tmpThoughts.Clear();
+            guest.needs.mood.thoughts.GetAllMoodThoughts(tmpThoughts);
+            if (tmpThoughts.Any(t => t.def == Thought && !ThoughtUtility.ThoughtNullified(guest, t.def)))
+            {
+                affectedPawnCache.Add(guest);
             }
+
+            tmpThoughts.Clear();
         }
     }
 }
