@@ -82,6 +82,7 @@ namespace Hospitality
             {
                 Transition t1 = new Transition(toilArriving, toilVisiting);
                 t1.triggers.Add(new Trigger_Memo("TravelArrived"));
+            t1.AddPreAction(new TransitionAction_EndAllJobs());
                 graphArrive.transitions.Add(t1);
             }
             // Too cold / hot

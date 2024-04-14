@@ -436,26 +436,29 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
         // Prefer roofed
         foreach (var cell in cells.InRandomOrder())
         {
-            if (cell.IsValid && pawn.CanReach(cell, PathEndMode.OnCell, Danger.Deadly))
+            if (!cell.IsValid || !pawn.CanReach(cell, PathEndMode.OnCell, Danger.Deadly)) continue;
+
+            if (cell.Roofed(map))
             {
-                if (cell.Roofed(map))
+                samples++;
+                // Unfortunately, we can't put the distance check before the CanReach check, or the unroofed option won't be found correctly anymore.
+                var distance = IntVec3Utility.ManhattanDistanceFlat(cell, pawn.Position);
+                if (distance < closestDistance)
                 {
-                    var distance = IntVec3Utility.ManhattanDistanceFlat(cell, pawn.Position);
-                    if (distance < closestDistance)
-                    {
-                        closest = cell;
-                        closestDistance = distance;
-                        samples++;
-                    }
+                    closest = cell;
+                    closestDistance = distance;
                 }
-
-                if (!unroofedOption.IsValid) unroofedOption = cell;
-
-                // We never have to calculate distance for more than 20 cells, but still have a decent chance for a nearby cell.
-                // This can still lead to pawns traveling an annoyingly far distance through the base, if the closest cell is not easily reachable.
-                if (samples >= 20) return closest;
             }
+
+            if (!unroofedOption.IsValid) unroofedOption = cell;
+
+            // We never have to calculate distance and reachability for more than a fixed amount of cells, but still have a decent chance for a nearby cell.
+            // This can still lead to pawns traveling an annoyingly far distance through the base, if the closest cell is not easily reachable.
+            if (samples >= 25) return closest;
         }
+
+        // Less than 50 samples, but end of cells
+        if (closest.IsValid) return closest;
 
         // Otherwise not roofed
         return unroofedOption;
