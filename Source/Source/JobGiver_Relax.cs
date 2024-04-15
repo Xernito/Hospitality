@@ -73,6 +73,8 @@ public class JobGiver_Relax : ThinkNode_JobGiver
     private bool GetJob(Pawn pawn, List<JoyGiverDef> allDefsListForReading, out Job job)
     {
         for (var j = 0; j < joyGiverChances.Count; j++)
+        {
+            try
             {
                 if (!allDefsListForReading.TryRandomElementByWeight(d => joyGiverChances[d], out var giverDef))
                 {
@@ -88,6 +90,21 @@ public class JobGiver_Relax : ThinkNode_JobGiver
 
                 joyGiverChances[giverDef] = 0f;
             }
+            catch (Exception e)
+            {
+                string allDefs;
+                try
+                {
+                    allDefs = allDefsListForReading?.Select(d => d?.defName).ToCommaList();
+                }
+                catch
+                {
+                    allDefs = "failed to parse";
+                }
+
+                Log.Error($"{pawn.LabelShort} failed to get a relax job. allDefs: {allDefs}\n{e.Message}");
+            }
+        }
 
         job = null;
         return false;
