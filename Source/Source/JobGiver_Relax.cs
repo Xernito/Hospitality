@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Hospitality.Utilities;
 using RimWorld;
 using UnityEngine;
@@ -74,9 +73,10 @@ public class JobGiver_Relax : ThinkNode_JobGiver
     {
         for (var j = 0; j < joyGiverChances.Count; j++)
         {
+            JoyGiverDef giverDef = null;
             try
             {
-                if (!allDefsListForReading.TryRandomElementByWeight(d => joyGiverChances[d], out var giverDef))
+                if (!allDefsListForReading.TryRandomElementByWeight(d => joyGiverChances[d], out giverDef))
                 {
                     //Log.ErrorOnce($"{pawn.LabelShort} could not find a joygiver. DefsCount = {allDefsListForReading.Count}", 45747 + pawn.thingIDNumber);
                     break;
@@ -92,17 +92,7 @@ public class JobGiver_Relax : ThinkNode_JobGiver
             }
             catch (Exception e)
             {
-                string allDefs;
-                try
-                {
-                    allDefs = allDefsListForReading?.Select(d => d?.defName).ToCommaList();
-                }
-                catch
-                {
-                    allDefs = "failed to parse";
-                }
-
-                Log.Error($"{pawn.LabelShort} failed to get a relax job. allDefs: {allDefs}\n{e.Message}");
+                Log.Error($"{pawn.LabelShort} failed to get a relax job. joyGiverDef={giverDef?.defName} of {giverDef?.modContentPack?.Name}\n{e.Message}");
             }
         }
 
