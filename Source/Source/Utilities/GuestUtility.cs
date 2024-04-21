@@ -414,7 +414,7 @@ public static class GuestUtility
 
         var friendPercentage = GetFriendPercentage(guest);
 
-        //Log.Message(String.Format("Recruiting {0}: diff: {1} mood: {2}", guest.NameStringShort,recruitDifficulty, colonyTrust));
+        // Log.Message($"Recruiting {guest.NameShortColored}: friendPercentage: {friendPercentage} recruiter: {recruiter.NameShortColored}");
         TryPleaseGuest(recruiter, guest, friendPercentage < 1, extraSentencePacks);
 
         // Notify player if the guest can be recruited now
@@ -637,7 +637,7 @@ public static class GuestUtility
         if (!InteractionUtility.CanInitiateInteraction(pawn)) return false;
         if (!InteractionUtility.CanReceiveInteraction(guest)) return false;
         if (!pawn.HasReserved(guest) && !pawn.CanReserveAndReach(guest, PathEndMode.OnCell, pawn.NormalMaxDanger())) return false;
-        if (guest.CurJob?.def.suspendable == false) return false;
+        if (!JobDriver_GuestBase.JobIsSuspendable(pawn)) return false;
 
         return true;
     }
@@ -654,7 +654,7 @@ public static class GuestUtility
         if (!InteractionUtility.CanInitiateInteraction(pawn)) return false;
         if (!InteractionUtility.CanReceiveInteraction(guest)) return false;
         if (!pawn.HasReserved(guest) && !pawn.CanReserveAndReach(guest, PathEndMode.OnCell, pawn.NormalMaxDanger())) return false;
-        if (guest.CurJob?.def.suspendable == false) return false;
+        if (!JobDriver_GuestBase.JobIsSuspendable(pawn)) return false;
 
         return true;
     }
