@@ -628,7 +628,7 @@ public static class GuestUtility
     public static bool ShouldMakeFriends(this Pawn pawn, Pawn guest)
     {
         if (!pawn.IsColonist) return false;
-        if (!ViableGuestTarget(guest, true)) return false;
+        if (!ViableGuestTarget(guest)) return false;
         if (!guest.MakeFriends()) return false;
         if (guest.InMentalState) return false;
         //if (guest.relations.OpinionOf(pawn) >= 100) return false;
@@ -636,8 +636,9 @@ public static class GuestUtility
         if (guest.relations.OpinionOf(pawn) <= -10) return false;
         if (!InteractionUtility.CanInitiateInteraction(pawn)) return false;
         if (!InteractionUtility.CanReceiveInteraction(guest)) return false;
+        if (!guest.CanCasuallyInteractNow()) return false;
+        if (!JobDriver_GuestBase.JobIsSuspendable(guest)) return false;
         if (!pawn.HasReserved(guest) && !pawn.CanReserveAndReach(guest, PathEndMode.OnCell, pawn.NormalMaxDanger())) return false;
-        if (!JobDriver_GuestBase.JobIsSuspendable(pawn)) return false;
 
         return true;
     }
@@ -653,8 +654,9 @@ public static class GuestUtility
         if (!guest.IsInGuestZone(guest)) return false;
         if (!InteractionUtility.CanInitiateInteraction(pawn)) return false;
         if (!InteractionUtility.CanReceiveInteraction(guest)) return false;
+        if (!guest.CanCasuallyInteractNow()) return false;
+        if (!JobDriver_GuestBase.JobIsSuspendable(guest)) return false;
         if (!pawn.HasReserved(guest) && !pawn.CanReserveAndReach(guest, PathEndMode.OnCell, pawn.NormalMaxDanger())) return false;
-        if (!JobDriver_GuestBase.JobIsSuspendable(pawn)) return false;
 
         return true;
     }

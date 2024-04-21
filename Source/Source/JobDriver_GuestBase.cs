@@ -37,6 +37,7 @@ public abstract class JobDriver_GuestBase : JobDriver_ChatWithPrisoner
         {
             yield return toil;
         }
+
         yield return Toils_Interpersonal.SetLastInteractTime(TargetIndex.A);
     }
 
@@ -90,7 +91,7 @@ public abstract class JobDriver_GuestBase : JobDriver_ChatWithPrisoner
 
     protected virtual bool FailCondition()
     {
-            return !GuestUtility.ViableGuestTarget(Talkee) || (!pawn.HasReserved(Talkee) && !pawn.CanReserve(Talkee));
+        return !GuestUtility.ViableGuestTarget(Talkee) || (!pawn.HasReserved(Talkee) && !pawn.CanReserve(Talkee));
     }
 
     protected static bool CanInteract(Pawn pawn, Pawn talkee)
