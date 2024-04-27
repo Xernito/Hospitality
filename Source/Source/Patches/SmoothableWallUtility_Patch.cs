@@ -15,8 +15,7 @@ public class SmoothableWallUtility_Patch
         [HarmonyPostfix]
         public static void Postfix(Pawn smoother, Thing __result)
         {
-            if (smoother == null) return;
-
+            if (smoother?.HostFaction == null) return;
             if (smoother.HostFaction != smoother.Faction)
             {
                 __result.SetFaction(smoother.HostFaction);
