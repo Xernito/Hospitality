@@ -104,15 +104,12 @@ public class JobGiver_Relax : ThinkNode_JobGiver
     private static void CheckArea(Pawn pawn)
     {
         var area = pawn.GetGuestArea();
-        //if (area == null)
-        //{
-        //    Log.ErrorOnce(pawn.LabelShort + " has a null area!", 932463 + pawn.thingIDNumber);
-        //    return;
-        //}
 
         if (area is { TrueCount: 0 })
         {
             Log.ErrorOnce(pawn.LabelShort + " has an area that is empty!", 43737 + pawn.thingIDNumber);
+            var compGuest = pawn.CompGuest();
+            if (compGuest != null) compGuest.GuestArea = null;
         }
     }
 
