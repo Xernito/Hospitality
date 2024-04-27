@@ -596,7 +596,7 @@ public static class GuestUtility
         if (pawn == null || bed == null) return;
 
         var free = bed.RentalFee <= 0;
-        var score = bed.BedValue(pawn, moneyBeforeClaiming);
+        var score = bed.CalculateBedValue(pawn, moneyBeforeClaiming);
         var stage = free
             ? score switch
             {
