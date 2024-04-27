@@ -40,7 +40,7 @@ public class JobGiver_Relax : ThinkNode_JobGiver
 
     public override void ResolveReferences()
     {
-        joyGiverChances = new DefMap<JoyGiverDef, float>();
+        joyGiverChances = [];
     }
 
     public override Job TryGiveJob(Pawn pawn)
@@ -133,34 +133,27 @@ public class JobGiver_Relax : ThinkNode_JobGiver
         {
             joyGiverChances[joyGiverDef] = 0f;
 
-            //if (this.JoyGiverAllowed(joyGiverDef)) REMOVED
-            if (pawn.needs.joy != null) // ADDED
+            if (pawn.needs.joy == null || pawn.needs.joy.tolerances.BoredOf(joyGiverDef.joyKind) || !joyGiverDef.Worker.CanBeGivenTo(pawn))
             {
-                if (!pawn.needs.joy.tolerances.BoredOf(joyGiverDef.joyKind))
-                {
-                    if (joyGiverDef.Worker.CanBeGivenTo(pawn))
-                    {
-                        if (joyGiverDef.pctPawnsEverDo < 1f)
-                        {
-                            Rand.PushState(pawn.thingIDNumber ^ 63216713);
-                            if (Rand.Value >= joyGiverDef.pctPawnsEverDo)
-                            {
-                                Rand.PopState();
-                                goto IL_FB;
-                            }
-
-                            Rand.PopState();
-                        }
-
-                        var tolerance = tolerances[joyGiverDef.joyKind];
-                        var factor = Mathf.Pow(1f - tolerance, 5f);
-                        factor = Mathf.Max(0.001f, factor);
-                        joyGiverChances[joyGiverDef] = joyGiverDef.Worker.GetChance(pawn) * factor;
-                    }
-                }
+                continue;
             }
 
-            IL_FB: ;
+            if (joyGiverDef.pctPawnsEverDo < 1f)
+            {
+                Rand.PushState(pawn.thingIDNumber ^ 63216713);
+                if (Rand.Value >= joyGiverDef.pctPawnsEverDo)
+                {
+                    Rand.PopState();
+                    continue;
+                }
+
+                Rand.PopState();
+            }
+
+            var tolerance = tolerances[joyGiverDef.joyKind];
+            var factor = Mathf.Pow(1f - tolerance, 5f);
+            factor = Mathf.Max(0.001f, factor);
+            joyGiverChances[joyGiverDef] = joyGiverDef.Worker.GetChance(pawn) * factor;
         }
 
         // Log.Message($"{pawn.NameShortColored}: Chances: {joyGiverChances.Select(kvp => $"{kvp.Key.defName}={kvp.Value}").ToCommaList()}");
