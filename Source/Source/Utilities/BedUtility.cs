@@ -160,7 +160,7 @@ namespace Hospitality.Utilities
             // Take opinion of other into account
             var otherOwner = bed.Owners().FirstOrDefault(owner => owner != guest);
             var opinion = otherOwner != null ? (guest.relations.OpinionOf(otherOwner) - 15) * 4 : 0;
-            return -150 + opinion;
+        return -250 + opinion;
         }
 
         private static int GetRoyalExpectations(Building_GuestBed bed, Pawn guest, Room room, out RoyalTitle title)
