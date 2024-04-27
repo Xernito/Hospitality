@@ -58,6 +58,7 @@ public class JobGiver_Relax : ThinkNode_JobGiver
         }
 
         if (pawn.needs == null) Log.ErrorOnce(pawn.LabelShort + " has no needs", 3463 + pawn.thingIDNumber);
+        if (pawn.reading == null) Log.ErrorOnce(pawn.LabelShort + " has no reading component", 3245 + pawn.thingIDNumber); // ADDED
         if (pawn.needs.joy == null) Log.ErrorOnce(pawn.LabelShort + " has no joy need", 8585 + pawn.thingIDNumber);
         if (pawn.skills == null) Log.ErrorOnce(pawn.LabelShort + " has no skills", 22352 + pawn.thingIDNumber);
         if (pawn.GetTimeAssignment() == null) Log.ErrorOnce(pawn.LabelShort + " has no time assignments", 74564 + pawn.thingIDNumber);
@@ -92,7 +93,7 @@ public class JobGiver_Relax : ThinkNode_JobGiver
             }
             catch (Exception e)
             {
-                Log.Error($"{pawn.LabelShort} failed to get a relax job. joyGiverDef={giverDef?.defName} of {giverDef?.modContentPack?.Name}\n{e.Message}");
+                Log.Error($"{pawn.LabelShort} failed to get a relax job. joyGiverDef={giverDef?.defName} of {giverDef?.modContentPack?.Name}\n{e.Message}\n{e.StackTrace}");
             }
         }
 
@@ -162,6 +163,7 @@ public class JobGiver_Relax : ThinkNode_JobGiver
             IL_FB: ;
         }
 
+        // Log.Message($"{pawn.NameShortColored}: Chances: {joyGiverChances.Select(kvp => $"{kvp.Key.defName}={kvp.Value}").ToCommaList()}");
         return allDefsListForReading;
     }
 }

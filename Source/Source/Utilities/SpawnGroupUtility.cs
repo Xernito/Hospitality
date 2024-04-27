@@ -120,9 +120,9 @@ namespace Hospitality.Utilities
                         return d is { category: ThingCategory.Item, alwaysHaulable: true } && d.EverStorable(true) && d.thingClass != null && d.thingClass != typeof(MinifiedThing) && !d.thingClass.IsSubclassOf(typeof(MinifiedThing)) 
                                && d.tradeability != Tradeability.None && d.GetCompProperties<CompProperties_Hatcher>() == null && !d.WillRotSoon() && (d.thingSetMakerTags == null || !d.thingSetMakerTags.Contains("NotForGuests"));
                     }
-                    catch (Exception)
+                catch (Exception e)
                     {
-                        Log.Error($"Found invalid thing: {d?.label} ({d?.defName}) from {(d?.modContentPack == null ? "unknown mod" : d.modContentPack.Name)}.");
+                    Log.Error($"Found invalid thing: {d?.label} ({d?.defName}) from {(d?.modContentPack == null ? "unknown mod" : d.modContentPack.Name)}.\n{e.Message}\n{e.StackTrace}");
                         return false;
                     }
                 }
@@ -157,6 +157,7 @@ namespace Hospitality.Utilities
             GuestUtility.EnsureHasWorkSettings(visitor);
             visitor.FixTimetable();
             visitor.FixDrugPolicy();
+        visitor.reading ??= new Pawn_ReadingTracker(visitor);
 
             if (visitor.foodRestriction != null && visitor.RaceProps.Humanlike) // Humanlike check copied from vanilla, faction check removed (these are always guests)
             {

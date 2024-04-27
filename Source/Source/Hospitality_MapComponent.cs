@@ -102,6 +102,7 @@ namespace Hospitality
             CheckForCorrectDrugPolicies();
             ApplyCorrectFoodRestrictions();
             AddOrRemoveNeedsAsAppropriate();
+        AddDynamicComponents();
         }
 
         [DebugAction("Pawns", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -120,6 +121,14 @@ namespace Hospitality
                 dialog.policyInt = pawn.foodRestriction.CurrentFoodPolicy;
             }
         }
+
+    private void AddDynamicComponents()
+    {
+        foreach (var pawn in PresentGuests)
+        {
+            pawn.reading ??= new Pawn_ReadingTracker(pawn);
+        }
+    }
 
         private void AddOrRemoveNeedsAsAppropriate()
         {
