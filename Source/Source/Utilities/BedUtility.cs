@@ -163,6 +163,12 @@ internal static class BedUtility
 
         // Take opinion of other into account
         var otherOwner = bed.Owners().FirstOrDefault(owner => owner != guest);
+        if (otherOwner == null)
+        {
+            var reservers = new HashSet<Pawn>();
+            bed.Map.reservationManager.ReserversOf(bed, reservers);
+            otherOwner = reservers.FirstOrDefault(reserver => reserver != guest);
+        }
         var opinion = otherOwner != null ? (guest.relations.OpinionOf(otherOwner) - 15) * 4 : 0;
         return -250 + opinion;
     }
@@ -192,7 +198,10 @@ internal static class BedUtility
 
     private static bool BedClaimedByStranger(Building_Bed bed, Pawn guest)
     {
-        return bed.Owners().Any(p => p != guest && !p.RaceProps.Animal && !LovePartnerRelationUtility.LovePartnerRelationExists(p, guest));
+        var reservers = new HashSet<Pawn>();
+        bed.Map.reservationManager.ReserversOf(bed, reservers);
+        return bed.Owners().Any(p => p != guest && !p.RaceProps.Animal && !LovePartnerRelationUtility.LovePartnerRelationExists(p, guest)) || (
+               reservers.Any(p => p != guest && !p.RaceProps.Animal && !LovePartnerRelationUtility.LovePartnerRelationExists(p, guest)));
     }
 
     public static int StaticBedValue(Building_GuestBed bed, [CanBeNull] out Room room, out int quality, out int impressiveness, out int roomTypeScore, out int comfort, out int facilities)
