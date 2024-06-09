@@ -20,7 +20,7 @@ internal static class BedUtility
         var money = silver?.stackCount ?? 0;
 
         var beds = FindAvailableBeds(guest, money);
-        //Log.Message($"Found {beds.Length} guest beds that {guest.LabelShort} can afford (<= {money} silver).");
+        // Log.Message($"Found {beds.Count()} guest beds that {guest.LabelShort} can afford (<= {money} silver).");
         if (!beds.Any()) return null;
 
         return SelectBestBed(beds, guest, money);
@@ -51,6 +51,7 @@ internal static class BedUtility
         if (!bed.AnyUnownedSleepingSlot) return false;
         if (bed.CompAssignableToPawn.IdeoligionForbids(guest)) return false;
         if (!guest.CanReserveAndReach(bed, PathEndMode.OnCell, Danger.Some, bed.SleepingSlotsCount)) return false;
+        if (OtherOwnerScore(bed, guest) < 0) return false;
         return true;
     }
 
@@ -63,16 +64,16 @@ internal static class BedUtility
     {
         StaticBedValue(bed, out var room, out var quality, out var impressiveness, out var roomType, out var comfort, out var facilities);
 
-        var fee = Mathf.RoundToInt(money > 0 ? 250 * (bed.RentalFee / money) : 0); // 0 - 250
+        var fee = Mathf.RoundToInt(money > 0 ? 250 * (1f * bed.RentalFee / money) : 0); // 0 - 250
 
         //Ideology
-        var ideologyNeeds = GetIdeologicalFulfillment(bed, guest); // -150 - 50
+        var ideologyNeeds = Ideology_GetFulfillment(bed, guest); // -150 - 50
 
         // Royalty requires single bed?
         var royalExpectations = GetRoyalExpectations(bed, guest, room, out var title);
 
         // Shared
-        var otherPawnOpinion = OtherPawnOpinion(bed, guest); // -200 - 90
+        var otherPawnOpinion = OtherOwnerScore(bed, guest); // -340 - 340
 
         // Temperature
         var temperature = GetTemperatureScore(guest, room, bed); // -200 - 0
@@ -113,7 +114,7 @@ internal static class BedUtility
         var score = impressiveness + quality + comfort + roomType + temperature + otherPawnOpinion + royalExpectations + ideologyNeeds + facilities - distance;
         var value = Mathf.CeilToInt(ScoreFactor * score - fee);
         //Log.Message($"For {guest.LabelShort} {bed.Label} at {bed.Position} has a score of {score} and value of {value}:\n"
-        //            + $"impressiveness = {impressiveness}, quality = {quality}, fee = {fee}, roomType = {roomType}, opinion = {otherPawnOpinion}, temperature = {temperature}, distance = {distance}");
+        //            + $"fee = {fee}, impressiveness = {impressiveness}, quality = {quality}, comfort = {comfort}, roomType = {roomType}, temperature = {temperature}, opinion = {otherPawnOpinion}, royalExpectations = {royalExpectations}, ideologyNeeds = {ideologyNeeds}, facilities = {facilities}, distance = {distance}");
         return value;
     }
 
@@ -122,14 +123,14 @@ internal static class BedUtility
         return building.TryGetComp<CompAffectedByFacilities>()?.LinkedFacilitiesListForReading.Count * 10 ?? 0;
     }
 
-    private static int GetIdeologicalFulfillment(Building_Bed bed, Pawn guest)
+    private static int Ideology_GetFulfillment(Building_Bed bed, Pawn guest)
     {
         if (!ModsConfig.IdeologyActive) return 0;
         if (guest.ideo == null || bed == null) return 0;
 
         var score = 0;
 
-        // If there's someone already using this bed and we're willing to share, affect score accordingly
+        // If there's someone already using this bed, and we're willing to share, affect score accordingly
         score += OtherOwnerScore(bed, guest);
 
         var requiredFacilities = guest.Ideo.PreceptsListForReading.SelectMany(p => p.def.comps.Select(c => (c as PreceptComp_BedThought)?.requireFacility?.def)).ToList();
@@ -148,26 +149,24 @@ internal static class BedUtility
     {
         var score = 0;
         GetUsersOfBed(bed, guest, _tmpOwners);
+
+        // Take opinion of others into account
         foreach (var otherOwner in _tmpOwners)
         {
-            if (RimWorld.BedUtility.WillingToShareBed(guest, otherOwner))
+            if (!RimWorld.BedUtility.WillingToShareBed(guest, otherOwner) || !RimWorld.BedUtility.WillingToShareBed(otherOwner, guest)) score += -340;
+            else
             {
-                score += guest.relations.OpinionOf(otherOwner); // -100 to 100
+                // Worst opinion counts, we're respectful like that
+                var opinions = Mathf.Min(guest.relations.OpinionOf(otherOwner), otherOwner.relations.OpinionOf(guest));
+                if (opinions < 15) score += -340;
+                else
+                {
+                    score += (opinions - 15) * 4;
+                }
             }
-            else return -250;
         }
 
         return score;
-    }
-
-    private static int OtherPawnOpinion(Building_GuestBed bed, Pawn guest)
-    {
-        if (!BedClaimedByStranger(bed, guest)) return 0;
-
-        // Take opinion of others into account
-        GetUsersOfBed(bed, guest, _tmpOwners);
-
-        return _tmpOwners.Sum(owner => (guest.relations.OpinionOf(owner) - 15) * 4);
     }
 
     private static void GetUsersOfBed(Building_Bed bed, Pawn except, HashSet<Pawn> ownersOut)
