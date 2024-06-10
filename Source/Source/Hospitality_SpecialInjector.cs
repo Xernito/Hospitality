@@ -53,59 +53,67 @@ public static class Hospitality_SpecialInjector
         var fields = typeof(ThingDef).GetFields(BindingFlags.Public | BindingFlags.Instance);
         foreach (var bedDef in bedDefs)
         {
-            if (bedDef.comps == null || !bedDef.comps.Any(c => typeof(CompAssignableToPawn_Bed).IsAssignableFrom(c.compClass)))
+            try
             {
-                var mod = bedDef.modContentPack != null ? bedDef.modContentPack.Name : "an unknown mod";
-                Log.Warning($"Not creating guest beds for {bedDef.label} from {mod}. It does not have a CompAssignableToPawn_Bed.");
-                continue;
-            }
-
-            var guestBedDef = new ThingDef();
-
-            // Copy fields
-            foreach (var field in fields)
-            {
-                if (field.Name == "designationCategory") continue;
-                field.SetValue(guestBedDef, field.GetValue(bedDef));
-            }
-
-            CopyComps(guestBedDef, bedDef);
-
-            // Other properties
-            guestBedDef.defName += "Guest";
-            guestBedDef.label = "GuestBedFormat".Translate(guestBedDef.label);
-            guestBedDef.thingClass = typeof(Building_GuestBed);
-            guestBedDef.shortHash = 0;
-            guestBedDef.minifiedDef = bedDef.minifiedDef;
-            guestBedDef.tradeability = Tradeability.None;
-            guestBedDef.scatterableOnMapGen = false;
-            guestBedDef.tickerType = TickerType.Long;
-            guestBedDef.modContentPack = GuestUtility.relaxDef.modContentPack;
-            guestBedDef.drawerType = DrawerType.MapMeshAndRealTime;
-
-            var takenHashes = ShortHashGiver.takenHashesPerDeftype[typeof(ThingDef)];
-            typeof(ShortHashGiver).GetMethod("GiveShortHash", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, [guestBedDef, typeof(ThingDef), takenHashes]);
-
-            DefDatabase<ThingDef>.Add(guestBedDef);
-            sb.Append(bedDef.defName + ", ");
-
-            foreach (var facility in facilities)
-            {
-                facility.linkableBuildings.Add(guestBedDef);
-            }
-
-            // Royalty
-            var titles = DefDatabase<RoyalTitleDef>.AllDefs;
-            foreach (var title in titles)
-            {
-                if (title.bedroomRequirements == null) continue;
-                foreach (var thingAnyOf in title.bedroomRequirements.OfType<RoomRequirement_ThingAnyOf>())
+                if (bedDef.comps == null || !bedDef.comps.Any(c => typeof(CompAssignableToPawn_Bed).IsAssignableFrom(c.compClass)))
                 {
-                    if (thingAnyOf.things.Contains(bedDef))
+                    var mod = bedDef.modContentPack != null ? bedDef.modContentPack.Name : "an unknown mod";
+                    Log.Warning($"Not creating guest beds for {bedDef.label} from {mod}. It does not have a CompAssignableToPawn_Bed.");
+                    continue;
+                }
+
+                var guestBedDef = new ThingDef();
+
+                // Copy fields
+                foreach (var field in fields)
+                {
+                    if (field.Name == "designationCategory") continue;
+                    field.SetValue(guestBedDef, field.GetValue(bedDef));
+                }
+
+                CopyComps(guestBedDef, bedDef);
+
+                // Other properties
+                guestBedDef.defName += "Guest";
+                guestBedDef.label = "GuestBedFormat".Translate(guestBedDef.label);
+                guestBedDef.thingClass = typeof(Building_GuestBed);
+                guestBedDef.shortHash = 0;
+                guestBedDef.minifiedDef = bedDef.minifiedDef;
+                guestBedDef.tradeability = Tradeability.None;
+                guestBedDef.scatterableOnMapGen = false;
+                guestBedDef.tickerType = TickerType.Long;
+                guestBedDef.modContentPack = GuestUtility.relaxDef.modContentPack;
+                guestBedDef.drawerType = DrawerType.MapMeshAndRealTime;
+
+                var takenHashes = ShortHashGiver.takenHashesPerDeftype[typeof(ThingDef)];
+                typeof(ShortHashGiver).GetMethod("GiveShortHash", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, [guestBedDef, typeof(ThingDef), takenHashes]);
+
+                DefDatabase<ThingDef>.Add(guestBedDef);
+                sb.Append(bedDef.defName + ", ");
+
+                foreach (var facility in facilities)
+                {
+                    facility.linkableBuildings.Add(guestBedDef);
+                }
+
+                // Royalty
+                var titles = DefDatabase<RoyalTitleDef>.AllDefs;
+                foreach (var title in titles)
+                {
+                    if (title.bedroomRequirements == null) continue;
+                    foreach (var thingAnyOf in title.bedroomRequirements.OfType<RoomRequirement_ThingAnyOf>())
                     {
-                        thingAnyOf.things.Add(guestBedDef);
+                        if (thingAnyOf.things.Contains(bedDef))
+                        {
+                            thingAnyOf.things.Add(guestBedDef);
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error creating guest bed for {bedDef?.defName} of mod {bedDef?.modContentPack?.Name}:\n{e.Message}\n{e.StackTrace}");
+                return;
             }
         }
         //Log.Message(sb.ToString().TrimEnd(' ', ','));
