@@ -92,6 +92,8 @@ namespace Hospitality
             if (target == guest) return false;
             if (target.inventory == null) return false;
             if (target.relations == null) return false;
+            if (target.InAggroMentalState) return false;
+            if (target.HostileTo(guest)) return false;
 
             var awake = target.Awake();
             if (guest.relations != null)
