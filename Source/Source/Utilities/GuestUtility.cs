@@ -153,6 +153,7 @@ public static class GuestUtility
         if (pawn.guest.HostFaction != null && pawn.guest.HostFaction != Faction.OfPlayer && pawn.Map.ParentFaction != Faction.OfPlayer) return false;
         if (pawn.Faction == null) return false;
         if (pawn.IsPrisonerOfColony || pawn.Faction.IsPlayer) return false;
+        if (pawn.IsEntity) return false;
         if (pawn.HostileTo(Faction.OfPlayer)) return false;
         return true;
     }
@@ -923,7 +924,7 @@ public static class GuestUtility
     public static void GiveLordToRoguePawn(Pawn pawn)
     {
         var comp = pawn.CompGuest();
-        if (comp == null || !comp.wasDowned || pawn?.jobs == null || pawn.Dead || pawn.Map == null || !pawn.RaceProps.Humanlike) return; // I don't think this ever happens...
+        if (comp == null || !comp.wasDowned || pawn?.jobs == null || pawn.Dead || pawn.Map == null || !pawn.RaceProps.Humanlike || pawn.IsEntity) return; // I don't think this ever happens...
 
         // Don't use this: Too generic, could conflict with all kinds of behaviors?
         //if(pawn.CurJob?.def == JobDefOf.Goto && pawn.CurJob.exitMapOnArrival)
