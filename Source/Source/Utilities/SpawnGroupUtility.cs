@@ -191,6 +191,7 @@ internal static class SpawnGroupUtility
         if (faction.leader == pawn && faction.PlayerGoodwill < 80) return false;
         if (pawn.kindDef == PawnKindDefOf.Empire_Royal_Bestower) return false;
         if (QuestUtility.IsReservedByQuestOrQuestBeingGenerated(pawn)) return false;
+        if (pawn.IsEntity) return false;
         return true;
     }
 
