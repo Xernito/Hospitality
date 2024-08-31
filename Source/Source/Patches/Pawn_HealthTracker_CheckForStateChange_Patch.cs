@@ -9,7 +9,7 @@ namespace Hospitality.Patches
     {
         public static void Postfix(Pawn_HealthTracker __instance, Pawn ___pawn, Hediff hediff)
         {
-            if (Settings.disableGuests) return;
+            if (ModSettings_Hospitality.disableGuests) return;
             if (!HealthAIUtility.ShouldSeekMedicalRest(___pawn) && !___pawn.health.hediffSet.HasNaturallyHealingInjury() 
                                                                 && Utilities.GuestUtility.GuestHasNoLord(___pawn))
             {

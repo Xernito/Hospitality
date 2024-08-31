@@ -20,7 +20,6 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
 
     // Taken from core
     private static readonly SimpleCurve pointsCurve = [new CurvePoint(45f, 0f), new CurvePoint(50f, 1f), new CurvePoint(100f, 1f), new CurvePoint(200f, 0.25f), new CurvePoint(300f, 0.1f), new CurvePoint(500f, 0f)];
-
     /// <summary>
     ///     From year 1-6, increase for 0 to 6 as the optimal amount
     /// </summary>
@@ -176,9 +175,9 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
             return true;
         }
 
-        if (Settings.disableGuests || map.mapPawns.ColonistCount == 0 || !map.GetMapComponent().guestsAreWelcome)
+        if (ModSettings_Hospitality.disableGuests || map.mapPawns.ColonistCount == 0 || !map.GetMapComponent().guestsAreWelcome)
         {
-            if (Settings.disableGuests)
+            if (ModSettings_Hospitality.disableGuests)
                 Log.Message("Guest group arrived, but guests are disabled in the options.");
             else if (map.mapPawns.ColonistCount == 0)
                 Log.Message("Guest group arrived, but there are no remaining colonists on the map.");
@@ -405,7 +404,7 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
     {
         //Log.Message($"Optimal amount of guests = {OptimalAmount}, max = {OptimalAmount * 16f/6}");
         var random = Rand.GaussianAsymmetric(OptimalAmount, 1.5f, 16f / 6);
-        return Mathf.Clamp(GenMath.RoundRandom(random), Settings.guestGroupSize.Value.Min, Settings.guestGroupSize.Value.Max);
+        return Mathf.Clamp(GenMath.RoundRandom(random), ModSettings_Hospitality.minGuestGroupSize, ModSettings_Hospitality.maxGuestGroupSize);
     }
 
     private static IntVec3 GetSpot(Map map, Area guestArea, Pawn pawn)
@@ -497,7 +496,7 @@ public class IncidentWorker_VisitorGroup : IncidentWorker_NeutralGroup
             var wealthBase = 10 + (visitor.Faction.HasGoodwill ? visitor.Faction.PlayerGoodwill / 2.0f : Rand.Range(0, 50)); // everyone travelling has at least 10s in their pocket
             var title = visitor.royalty?.MostSeniorTitle;
             if (title != null) wealthBase += title.def.seniority / 2.0f;
-            var amountS = Mathf.RoundToInt((wealthBase + visitor.ageTracker.AgeBiologicalYears / 5.0f) * Settings.silverMultiplier); // eldery can get better beds to compensate for their lower mood
+            var amountS = Mathf.RoundToInt((wealthBase + visitor.ageTracker.AgeBiologicalYears / 5.0f) * ModSettings_Hospitality.silverMultiplier); // eldery can get better beds to compensate for their lower mood
             if (amountS > 0)
             {
                 var money = SpawnGroupUtility.CreateRandomItem(visitor, ThingDefOf.Silver);

@@ -89,7 +89,7 @@ public class JobDriver_BuyItem : JobDriver
         var thing = Item.SplitOff(count);
 
         // Notification
-        if (Settings.enableBuyNotification)
+        if (ModSettings_Hospitality.enableBuyNotification)
         {
             var text = price <= 0 ? "GuestTookFreeItem" : "GuestBoughtItem";
             Messages.Message(text.Translate(new NamedArgument(toil.actor.Faction, "FACTION"), price, new NamedArgument(toil.actor, "PAWN"), new NamedArgument(thing, "ITEM")), toil.actor, MessageTypeDefOf.SilentInput);

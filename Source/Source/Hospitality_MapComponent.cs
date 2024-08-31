@@ -49,13 +49,14 @@ public class Hospitality_MapComponent : MapComponent
         Scribe_Values.Look(ref guestsCanTakeFoodForFree, "guestsCanTakeFoodForFree");
         Scribe_Values.Look(ref nextQueueInspection, "nextQueueInspection");
         Scribe_Deep.Look(ref drugPolicy, "drugPolicy");
-
         defaultAreaRestriction ??= map.areaManager.Home;
     }
 
     public override void FinalizeInit()
     {
         MapComponentCache.Register(this);
+        Mod_Hospitality.ToggleTabIfNeeded();
+        Mod_Hospitality.UpdateMainButtonIcon();
     }
 
     public void RefreshGuestListTotal()

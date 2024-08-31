@@ -87,7 +87,7 @@ internal static class GenericUtility
 
     internal static void CheckTooManyIncidentsAtOnce(IncidentQueue incidentQueue)
     {
-        var maxIncidents = Settings.maxIncidentsPer3Days + 1;
+        var maxIncidents = ModSettings_Hospitality.maxIncidentsPer3Days + 1;
         const int rangeOfDays = 3;
 
         if (incidentQueue.Count < maxIncidents) return;
