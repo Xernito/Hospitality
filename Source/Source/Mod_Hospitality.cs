@@ -18,7 +18,7 @@ namespace Hospitality
         public Mod_Hospitality(ModContentPack content) : base(content)
         {
             settings = GetSettings<ModSettings_Hospitality>();
-            Harmony harmony = new Harmony(this.Content.PackageIdPlayerFacing);
+            Harmony harmony = new (this.Content.PackageIdPlayerFacing);
             harmony.PatchAll();
             PostLoad();
 
@@ -53,13 +53,6 @@ namespace Hospitality
         //public static void RegisterTickAction(Action action)
         //{
         //    tickActions.Add(action);
-        //}
-
-        //public override void WorldLoaded()
-        //{
-        //    ToggleTabIfNeeded();
-            //foreach (var map in Find.Maps) map.GetMapComponent().OnWorldLoaded();
-            //GuestUtility.Initialize();
         //}
 
         public static void SettingsChanged()

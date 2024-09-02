@@ -56,10 +56,10 @@ namespace Hospitality
 
         public void DoSettingsWindowContents(Rect inRect)
         {
-            Rect rect = new Rect(inRect.x, inRect.y, inRect.width - 20f, inRect.height);
+            Rect rect = new (inRect.x, inRect.y, inRect.width - 20f, inRect.height);
             float contentHeight = 1200f;
             Widgets.BeginScrollView(inRect, ref this.scrollPosition, new Rect(0f, 0f, rect.width, contentHeight), true);
-            Listing_Hospitality options = new Listing_Hospitality();
+            Listing_Hospitality options = new ();
             options.Begin(rect);
             options.GapLine();
             Text.Font = GameFont.Medium;
@@ -79,8 +79,14 @@ namespace Hospitality
             options.Gap();
             (minGuestGroupSize, maxGuestGroupSize) = options.CustomSliderLabelIntRange("GuestGroupSize".Translate(), minGuestGroupSize, maxGuestGroupSize, 1, 20, 0.5f, "GuestGroupSizeDesc".Translate(), minGuestGroupSize.ToString() + "~" + maxGuestGroupSize.ToString(), 1.ToString(), 20.ToString(), 1);
             options.GapLine();
+            bool previousUseIcon = useIcon;
+            bool previousGuestTab = disableGuestsTab;
             options.CustomCheckboxLabeled("DisableGuestsTab".Translate(), ref disableGuestsTab, "DisableGuestsTabDesc".Translate());
             options.CustomCheckboxLabeled("UseIcon".Translate(), ref useIcon, "UseIconDesc".Translate());
+            if (useIcon != previousUseIcon || previousGuestTab != disableGuestsTab)
+            {
+                Mod_Hospitality.SettingsChanged();
+            }
             options.CustomCheckboxLabeled("EnableBuyNotification".Translate(), ref enableBuyNotification, "EnableBuyNotificationDesc".Translate());
             options.CustomCheckboxLabeled("EnableRecruitNotification".Translate(), ref enableRecruitNotification, "EnableRecruitNotificationDesc".Translate());
             options.CustomCheckboxLabeled("DisableFriendlyGearDrops".Translate(), ref disableFriendlyGearDrops, "DisableFriendlyGearDropsDesc".Translate());
