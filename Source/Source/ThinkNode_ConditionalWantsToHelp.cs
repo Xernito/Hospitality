@@ -9,7 +9,7 @@ namespace Hospitality
         
         public override bool Satisfied(Pawn pawn)
         {
-            if (Settings.disableWork) return false;
+            if (ModSettings_Hospitality.disableWork) return false;
             if (pawn.needs?.mood == null) return false;
             var isHappy = pawn.needs.mood.CurLevel > requiredHappiness;
             // See JobGiver_Work_Patch for more complex formula

@@ -26,7 +26,7 @@ internal static class Pawn_HealthTracker_MakeDowned_Patch
     private static bool ShouldDrop(Pawn pawn)
     {
         if (pawn == null || pawn.IsColonist || pawn.IsSlaveOfColony || pawn.IsPrisonerOfColony) return true; // Only affect guests and caravans (who might come in, get drunk and drop all their loot)
-        return !Settings.disableFriendlyGearDrops || pawn.Faction == null || pawn.HostileTo(Faction.OfPlayer) || pawn.Faction == Faction.OfPlayer;
+        return !ModSettings_Hospitality.disableFriendlyGearDrops || pawn.Faction == null || pawn.HostileTo(Faction.OfPlayer) || pawn.Faction == Faction.OfPlayer;
     }
 
     [UsedImplicitly]

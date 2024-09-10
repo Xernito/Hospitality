@@ -419,7 +419,7 @@ public static class GuestUtility
         TryPleaseGuest(recruiter, guest, friendPercentage < 1, extraSentencePacks);
 
         // Notify player if the guest can be recruited now
-        if (friendPercentage < 1 && Settings.enableRecruitNotification)
+        if (friendPercentage < 1 && ModSettings_Hospitality.enableRecruitNotification)
         {
             var newFriendPercentage = GetFriendPercentage(guest);
             if (newFriendPercentage >= 1)
@@ -946,7 +946,7 @@ public static class GuestUtility
 
     public static void CheckForRogueGuests(Map map)
     {
-        if (Settings.disableGuests) return;
+        if (ModSettings_Hospitality.disableGuests) return;
         var pawns = map.mapPawns.AllPawnsSpawned.Where(p => !HealthAIUtility.ShouldSeekMedicalRest(p) && !p.health.hediffSet.HasNaturallyHealingInjury())
             .Where(GuestHasNoLord);
 

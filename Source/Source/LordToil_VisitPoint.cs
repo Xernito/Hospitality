@@ -141,7 +141,7 @@ internal class LordToil_VisitPoint : LordToil
             var chance = GenMath.LerpDoubleClamped(0.2f, 0.9f, 0, 1, avgScore);
             //Log.Message($"Visitors are leaving. Gift chance: wealth chance = {VisitorGiftForPlayerUtility.PlayerWealthChanceFactor(Map)}, avgScore = {avgScore}, final = {chance}");
 
-            if (DebugSettings.instantVisitorsGift || (lord.numPawnsLostViolently == 0 && !sentAway && !Settings.disableGifts && Rand.Chance(chance)))
+            if (DebugSettings.instantVisitorsGift || (lord.numPawnsLostViolently == 0 && !sentAway && !ModSettings_Hospitality.disableGifts && Rand.Chance(chance)))
             {
                 VisitorGiftForPlayerUtility.GiveRandomGift(lord.ownedPawns, lord.faction);
             }

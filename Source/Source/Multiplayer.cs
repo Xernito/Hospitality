@@ -18,7 +18,7 @@ internal static class Multiplayer
         if (!MP.enabled) return;
 
         // CompGuest
-        guestFields =
+        guestFields = 
         [
             MP.RegisterSyncField(typeof(CompGuest), "guestArea_int").SetBufferChanges(),
             MP.RegisterSyncField(typeof(CompGuest), "shoppingArea_int").SetBufferChanges(),
@@ -29,8 +29,8 @@ internal static class Multiplayer
             MP.RegisterSyncField(typeof(CompGuest), nameof(CompGuest.wasDowned))
         ];
 
-        // Hospitality_MapComponent
-        mapFields =
+    // Hospitality_MapComponent
+    mapFields =
         [
             MP.RegisterSyncField(typeof(Hospitality_MapComponent), nameof(Hospitality_MapComponent.defaultMakeFriends)),
             MP.RegisterSyncField(typeof(Hospitality_MapComponent), nameof(Hospitality_MapComponent.defaultEntertain)),

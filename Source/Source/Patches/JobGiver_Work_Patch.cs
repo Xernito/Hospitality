@@ -23,9 +23,9 @@ namespace Hospitality.Patches
                 if (!canDo) return false;
 
                 if (IsNegotiating(giver)) return false;
-                if (Settings.disableArtAndCraft.Value && IsArtOrCraft(giver.def.workType.workTags)) return false;
-                if (Settings.disableOperations.Value && IsOperation(giver)) return false;
-                if (Settings.disableMedical.Value && IsOperation(giver) || IsMedical(giver)) return false;
+                if (ModSettings_Hospitality.disableArtAndCraft && IsArtOrCraft(giver.def.workType.workTags)) return false;
+                if (ModSettings_Hospitality.disableOperations && IsOperation(giver)) return false;
+                if (ModSettings_Hospitality.disableMedical && IsOperation(giver) || IsMedical(giver)) return false;
                 if (IsWarden(giver)) return false; // Too many issues with this
                 if (IsFeeding(giver)) return false; // Too many problems with this (uses food from inventory, wrong food category, etc.)
 
@@ -80,7 +80,7 @@ namespace Hospitality.Patches
             private static bool IsSkilledEnough(Pawn pawn, WorkTypeDef workTypeDef)
             {
                 if (workTypeDef.relevantSkills.Count == 0) return true;
-                return pawn.skills.AverageOfRelevantSkillsFor(workTypeDef) >= Settings.minGuestWorkSkill.Value;
+                return pawn.skills.AverageOfRelevantSkillsFor(workTypeDef) >= ModSettings_Hospitality.minGuestWorkSkill;
             }
         }
 

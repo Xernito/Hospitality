@@ -30,8 +30,14 @@ internal static class BedUtility
     public static IReadOnlyList<Pawn> Owners([CanBeNull] this Building_Bed bed)
     {
         var comp = bed?.CompAssignableToPawn;
-        if (comp == null) return [];
-        if (comp.AssignedPawnsForReading == null) return [];
+        if (comp == null)
+        {
+            return Array.Empty<Pawn>();
+        }
+        if (comp.AssignedPawnsForReading == null)
+        {
+            return Array.Empty<Pawn>();
+        }
         comp.AssignedPawnsForReading.RemoveAll(p => p == null);
         return bed.CompAssignableToPawn.AssignedPawnsForReading;
     }

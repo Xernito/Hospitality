@@ -16,8 +16,8 @@ namespace Hospitality.Patches
                 if (__instance.InnerThing is not Building_Bed) return true;
                 if (__instance.InnerThing?.def?.Minifiable != true)
                 {
-                    // Destroy next tick
-                    HospitalityModBase.RegisterTickAction(DestroySafely(__instance));
+                    // Destroy next tick - This may be unsafe now!
+                    DestroySafely(__instance);
                     return false;
                 }
                 return true;
