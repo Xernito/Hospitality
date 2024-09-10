@@ -1,77 +1,58 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using HarmonyLib;
 using Hospitality.Utilities;
 using RimWorld;
 using UnityEngine;
 using Verse;
-using System.Reflection;
-using GuestUtility = Hospitality.Utilities.GuestUtility;
 
-namespace Hospitality
+namespace Hospitality;
+
+public class Mod_Hospitality : Mod
 {
-    public class Mod_Hospitality : Mod
+    private static ModSettings_Hospitality settings;
+
+    public Mod_Hospitality(ModContentPack content) : base(content)
     {
-        public static ModSettings_Hospitality settings;
-        //private static readonly List<Action> tickActions = new();
-        public Mod_Hospitality(ModContentPack content) : base(content)
-        {
-            settings = GetSettings<ModSettings_Hospitality>();
-            Harmony harmony = new (this.Content.PackageIdPlayerFacing);
-            harmony.PatchAll();
-            PostLoad();
+        settings = GetSettings<ModSettings_Hospitality>();
+        Harmony harmony = new(Content.PackageIdPlayerFacing);
+        harmony.PatchAll();
+        PostLoad();
+    }
 
-        }
-        public override void DoSettingsWindowContents(Rect inRect)
-        {
-            settings.DoSettingsWindowContents(inRect);
-        }
-        public override string SettingsCategory()
-        {
-            return "Hospitality";
-        }
-        public override void WriteSettings()
-        {
-            base.WriteSettings();
-        }
+    public override void DoSettingsWindowContents(Rect inRect)
+    {
+        settings.DoSettingsWindowContents(inRect);
+    }
 
-        public static void PostLoad()
-        {
-            LongEventHandler.ExecuteWhenFinished(() => DefsUtility.CheckForInvalidDefs());
-        }
+    public override string SettingsCategory()
+    {
+        return "Hospitality";
+    }
 
-        //public override void Tick(int currentTick)
-        //{
-        //    foreach (var action in tickActions)
-        //    {
-        //        action();
-        //    }
-        //    tickActions.Clear();
-        //}
+    public override void WriteSettings()
+    {
+        base.WriteSettings();
+    }
 
-        //public static void RegisterTickAction(Action action)
-        //{
-        //    tickActions.Add(action);
-        //}
+    private static void PostLoad()
+    {
+        LongEventHandler.ExecuteWhenFinished(DefsUtility.CheckForInvalidDefs);
+    }
 
-        public static void SettingsChanged()
-        {
-            ToggleTabIfNeeded();
-            UpdateMainButtonIcon();
-            
-        }
+    public static void SettingsChanged()
+    {
+        ToggleTabIfNeeded();
+        UpdateMainButtonIcon();
+    }
 
-        public static void ToggleTabIfNeeded()
-        {
-            DefDatabase<MainButtonDef>.GetNamed("Guests").buttonVisible = !ModSettings_Hospitality.disableGuestsTab;
-        }
+    public static void ToggleTabIfNeeded()
+    {
+        DefDatabase<MainButtonDef>.GetNamed("Guests").buttonVisible = !ModSettings_Hospitality.disableGuestsTab;
+    }
 
-        public static void UpdateMainButtonIcon()
-        {
-            var mainButtonDef = DefDatabase<MainButtonDef>.GetNamed("Guests");
-            mainButtonDef.iconPath = ModSettings_Hospitality.useIcon ? "UI/Buttons/MainButtons/IconHospitality" : null;
-            if (mainButtonDef.iconPath == null) mainButtonDef.icon = null;
-        }
+    public static void UpdateMainButtonIcon()
+    {
+        var mainButtonDef = DefDatabase<MainButtonDef>.GetNamed("Guests");
+        mainButtonDef.iconPath = ModSettings_Hospitality.useIcon ? "UI/Buttons/MainButtons/IconHospitality" : null;
+        if (mainButtonDef.iconPath == null) mainButtonDef.icon = null;
     }
 }
