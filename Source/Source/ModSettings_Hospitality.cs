@@ -54,9 +54,9 @@ public class ModSettings_Hospitality : ModSettings
     public void DoSettingsWindowContents(Rect inRect)
     {
         Rect rect = new(inRect.x, inRect.y, inRect.width - 20f, inRect.height);
-        var contentHeight = 1200f;
+        var contentHeight = 700f;
         Widgets.BeginScrollView(inRect, ref scrollPosition, new Rect(0f, 0f, rect.width, contentHeight));
-        Listing_Hospitality options = new();
+        Listing_Custom options = new();
         options.Begin(rect);
         options.GapLine();
         Text.Font = GameFont.Medium;

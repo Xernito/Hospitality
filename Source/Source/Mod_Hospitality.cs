@@ -38,6 +38,7 @@ public class Mod_Hospitality : Mod
         LongEventHandler.ExecuteWhenFinished(DefsUtility.CheckForInvalidDefs);
     }
 
+    // This isn't called on every setting changes
     public static void SettingsChanged()
     {
         ToggleTabIfNeeded();
