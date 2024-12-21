@@ -124,7 +124,7 @@ public class JobGiver_ScroungeFood : ThinkNode_JobGiver
             if (target.story?.traits != null)
             {
                 if (target.story.traits.HasTrait(TraitDefOf.Kind)) minAwakeOpinion -= 35;
-                if (target.story.traits.HasTrait(TraitDefOf.Kind)) minAwakeOpinion += 50;
+                if (target.story.traits.HasTrait(TraitDefOf.Greedy)) minAwakeOpinion += 50;
             }
 
             if (awake && target.relations.OpinionOf(guest) < minAwakeOpinion) return 0;
