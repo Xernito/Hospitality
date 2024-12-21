@@ -48,7 +48,18 @@ public class JoyGiver_BuyStuff : JoyGiver
         var requiresFoodFactor = GuestUtility.GetRequiresFoodFactor(pawn);
 
         // Try some things
-        var selection = things.TakeRandom(5).Where(t => pawn.CanReach(t.Position, PathEndMode.Touch, Danger.None, false, false, TraverseMode.PassDoors)).ToArray();
+        IEnumerable<Thing> selectedThings;
+        if (requiresFoodFactor <= 0.8)
+            selectedThings = things.TakeRandom(5);
+        else
+        {
+            // Do not pick at random if the pawn needs food, select only food, and try to avoid disliked food.
+            selectedThings = things.Where(t => t.IsFood() && pawn.RaceProps.CanEverEat(t) && FoodUtility.MoodFromIngesting(pawn, t, t.def) >= 0);
+            if (selectedThings.FirstOrDefault() == null)
+                selectedThings = things.Where(t => t.IsFood() && pawn.RaceProps.CanEverEat(t));
+            selectedThings = selectedThings.ToList().TakeRandom(5);
+        }
+        var selection = selectedThings.Where(t => pawn.CanReach(t.Position, PathEndMode.Touch, Danger.None, false, false, TraverseMode.PassDoors)).ToArray();
         foreach (var t in selection)
         {
             RegisterLookedAt(pawn, t.Position);
