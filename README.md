@@ -8,7 +8,7 @@ Find them [here](https://github.com/OrionFive/Hospitality/releases).
 Post it [here](https://github.com/OrionFive/Hospitality/issues).
 
 ## Helping out
-I'm not actively adding features or fixes anymore (same for my other mods). After ten years of managing mods I've burnt out on RimWorld and I don't think I'll recover.
+I'm not actively adding features or fixes anymore (same for my other mods). After more than ten years of managing mods I've burnt out on RimWorld and I don't think I'll recover.
 So if you see bugs or enhancements you care about, feel free to create a solution. I review all pull requests.
 
 ## Become a patron! 
