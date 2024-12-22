@@ -48,7 +48,18 @@ public class JoyGiver_BuyStuff : JoyGiver
         var requiresFoodFactor = GuestUtility.GetRequiresFoodFactor(pawn);
 
         // Try some things
-        var selection = things.TakeRandom(5).Where(t => pawn.CanReach(t.Position, PathEndMode.Touch, Danger.None, false, false, TraverseMode.PassDoors)).ToArray();
+        IEnumerable<Thing> selectedThings;
+        if (requiresFoodFactor <= 0.8)
+            selectedThings = things.TakeRandom(5);
+        else
+        {
+            // Do not pick at random if the pawn needs food, select only food, and try to avoid disliked food.
+            selectedThings = things.Where(t => t.IsFood() && pawn.RaceProps.CanEverEat(t) && FoodUtility.MoodFromIngesting(pawn, t, t.def) >= 0);
+            if (selectedThings.FirstOrDefault() == null)
+                selectedThings = things.Where(t => t.IsFood() && pawn.RaceProps.CanEverEat(t));
+            selectedThings = selectedThings.ToList().TakeRandom(5);
+        }
+        var selection = selectedThings.Where(t => pawn.CanReach(t.Position, PathEndMode.Touch, Danger.None, false, false, TraverseMode.PassDoors)).ToArray();
         foreach (var t in selection)
         {
             RegisterLookedAt(pawn, t.Position);
@@ -99,8 +110,9 @@ public class JoyGiver_BuyStuff : JoyGiver
             //Log.Message($"{pawn.LabelShort} looked at {thing.LabelShort} at {thing.Position}.");
             //Log.Message($"{pawn.LabelShort} added {requiresFoodFactor} to the score for his hunger and {appFactor} for food optimality.");
             appFactor += requiresFoodFactor;
-            if (thing.def.IsWithinCategory(ThingCategoryDefOf.PlantFoodRaw)) appFactor -= 0.25f;
-            if (thing.def.IsWithinCategory(ThingCategoryDefOf.MeatRaw)) appFactor -= 0.5f;
+            // FoodOptimality() factors in mood effect, but still returns positive results even for abhorrent food.
+            // Adjust explicitly to make pawns avoid food that would result in mood debuffs.
+            appFactor += FoodUtility.MoodFromIngesting(pawn, thing, thing.def) / 10f;
         }
         // Other consumables
         else if (thing.IsIngestible() && thing.def.ingestible.joy > 0)
